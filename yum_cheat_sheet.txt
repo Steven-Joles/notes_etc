@@ -1,0 +1,109 @@
+# Yum
+
+## Security Only Updates
+
+[Centos/Yum Security Updates](https://linuxaria.com/howto/enabling-automatic-updates-in-centos-7-and-rhel-7)
+
+| Updates                            | Command                                       |
+|------------------------------------|-----------------------------------------------|
+| default                            | ` upgrade`                                 |
+| security                           | `yum --security upgrade`                      |
+| security-severity:Critical         | `yum --sec-severity=Critical upgrade`         |
+| minimal                            | `yum --bugfix upgrade-minimal`                |
+| minimal-security                   | `yum --security upgrade-minimal`              |
+| minimal-security-severity:Critical | `yum --sec-severity=Critical upgrade-minimal` |
+
+```bash
+yum update #(normal package update.)
+yum --security check-update
+yum list-security
+yum check-update
+yum update
+```
+
+## Search for a yum Package
+
+```bash
+#List available packages (including installed)
+sudo yum list | less
+
+#List only installed packages.
+sudo yum list installed | less
+```
+
+## Search for a yum Package
+
+```bash
+sudo yum search go
+```
+
+## Get Info for a yum Package
+
+```bash
+sudo yum info sssd
+```
+
+## Remove a yum Package
+
+It's not easy. How do you differentiate between *"a file that was required by something I have since removed"* from *"a file that is not required by anything else that I really want"*?
+
+You can use the package-cleanup command from the yum-utils package to list "leaf nodes" in your package dependency graph. These are packages that can be removed without affecting anything else:
+
+`$ package-cleanup --leaves`
+
+This will produce a list of "libraries" on which nothing else depends. In most cases you can safely remove these packages. If you add --all to the command line:
+
+`$ package-cleanup --leaves --all`
+
+You'll get packages that aren't considered libraries, also, but this list is going to be so long that it probably won't be useful.
+
+**Example Removing Mono**
+
+```bash
+#Remove mono
+sudo yum remove mono-core
+
+#Check which unused packages are on the system.
+package-cleanup --leaves
+```
+
+After running `package-cleanup` we see the following packages.
+
+- glib2-devel-2.50.3-3.el7.x86_64
+- libgdiplus-2.10-9.el7.x86_64
+- libsysfs-2.1.0-16.el7.x86_64
+
+When scrolling up to see mono's dependencies one of them happened to be _*libgdiplus*_ this should be cleaned up as well.
+
+Lets clean up the unused packages.
+
+```bash
+sudo package-cleanup --quiet --leaves --exclude-bin | sudo xargs yum remove -y
+package-cleanup --leaves
+```
+
+I had to run this a few times in order to remove all the leaves of unused packages.  It did not remove glib2, as that is in a bin directory.
+
+## Yum history
+
+```bash
+#Re run a yum command from previously.
+sudo yum history repeat
+
+#See history of yum runs.
+sudo yum history list
+
+#See history of yum summary aggregated by user.
+sudo yum history summary
+
+#Get info a yum instance
+sudo yum history info <number>
+
+#Remove packages installed by a certain run of yum install
+sudo yum history undo <number>
+#or you can redo
+sudo yum history redo <number>
+
+#Clear yum history
+sudo yum history new
+```
